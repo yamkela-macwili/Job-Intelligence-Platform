@@ -1,0 +1,1 @@
+"""Stores job descriptions or predefined roles."""

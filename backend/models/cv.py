@@ -1,0 +1,1 @@
+"""Defines the CV table schema."""

@@ -1,0 +1,1 @@
+"""Extracts and cleans text from CV PDFs using pdfplumber."""

@@ -1,0 +1,1 @@
+"""Defines structure of AI analysis responses."""

@@ -1,0 +1,1 @@
+"""Manages environment variables and application settings."""

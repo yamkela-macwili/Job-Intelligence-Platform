@@ -1,0 +1,1 @@
+"""Defines input/output structure for CV operations."""

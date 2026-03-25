@@ -1,0 +1,1 @@
+""" Stores analysis results such as match scores and insights."""

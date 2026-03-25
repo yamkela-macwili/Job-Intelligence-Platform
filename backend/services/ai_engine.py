@@ -1,0 +1,1 @@
+"""Handles communication with AI models and generates insights."""

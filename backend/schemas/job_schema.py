@@ -1,0 +1,1 @@
+""" Defines job related request and response formats."""

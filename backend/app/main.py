@@ -1,0 +1,1 @@
+"""Entry point of the FastAPI application. Initializes the app and registers routes."""
