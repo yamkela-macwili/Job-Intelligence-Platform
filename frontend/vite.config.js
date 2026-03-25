@@ -1,0 +1,1 @@
+// Configuration for Vite build tool.
