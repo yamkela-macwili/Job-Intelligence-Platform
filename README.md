@@ -6,7 +6,35 @@ The AI Powered Career and Job Intelligence Platform is a full stack application 
 
 The system transforms job searching into a data driven process by identifying skill gaps, generating match scores, and producing personalized career recommendations. It combines backend engineering, AI, and NLP into a scalable architecture.
 
-This version introduces containerization using Docker for the backend to ensure consistency, portability, and simplified deployment.
+---
+
+## Quick Start
+
+### Backend Setup
+
+```bash
+cd backend
+docker-compose up -d
+open http://localhost:8000/docs
+```
+
+See [Backend Documentation](./backend/docs/README.md) for complete setup.
+
+### Testing
+
+```bash
+cd backend
+pytest tests/
+```
+
+---
+
+## Documentation
+
+- **Backend Docs**: [backend/docs/README.md](./backend/docs/README.md)
+- **Quick Start**: [backend/docs/QUICKSTART.md](./backend/docs/QUICKSTART.md)
+- **Deployment**: [backend/docs/DEPLOYMENT.md](./backend/docs/DEPLOYMENT.md)
+- **API Reference**: [backend/docs/api/API_REFERENCE.md](./backend/docs/api/API_REFERENCE.md)
 
 ---
 
