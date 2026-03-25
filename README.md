@@ -4,7 +4,9 @@
 
 The AI Powered Career and Job Intelligence Platform is a full stack application that analyzes a user CV against a target job role and generates structured, actionable insights to improve employability.
 
-The system transforms job searching into a data driven process by identifying skill gaps, generating match scores, and producing personalized career recommendations. It combines modern backend engineering with AI and NLP to deliver intelligent decision support.
+The system transforms job searching into a data driven process by identifying skill gaps, generating match scores, and producing personalized career recommendations. It combines backend engineering, AI, and NLP into a scalable architecture.
+
+This version introduces containerization using Docker for the backend to ensure consistency, portability, and simplified deployment.
 
 ---
 
@@ -25,44 +27,45 @@ The system transforms job searching into a data driven process by identifying sk
 
 ### Frontend
 
-* `React (Vite)` for fast UI development
-* `TailwindCSS` for styling
-* `Framer Motion` for interactions
+* `React (Vite)`
+* `TailwindCSS`
+* `Framer Motion`
 * Deployment on `Vercel`
 
 ### Backend
 
-* `FastAPI` for high performance APIs
-* `Pydantic` for validation and data models
+* `FastAPI`
+* `Pydantic`
+* Containerized with `Docker`
 
 ### AI and NLP
 
-* `OpenAI API` for semantic reasoning and generation
-* `spaCy` for skill extraction and preprocessing
+* `OpenAI API`
+* `spaCy`
 
 ### File Processing
 
-* `pdfplumber` for extracting text from CV PDFs
+* `pdfplumber`
 
 ### Database
 
-* `PostgreSQL` for relational storage
-* `SQLAlchemy` as ORM layer
+* `PostgreSQL`
+* `SQLAlchemy`
 
 ### Deployment
 
 * Frontend deployed on Vercel
-* Backend deployed on Azure App Service
+* Backend container deployed on Azure
 * Database hosted on Azure PostgreSQL
 
 ---
 
 ## System Architecture
 
-```text
+```text id="t1r92q"
 Frontend (React - Vercel)
         ↓
-FastAPI Backend (Azure App Service)
+Dockerized FastAPI Backend (Azure)
         ↓
 Service Layer (AI + NLP)
         ↓
@@ -73,152 +76,173 @@ PostgreSQL Database (Azure)
 
 ## Project Structure
 
-```text
+```text id="7rd4qp"
 backend/
 │
 ├── app/
 │   ├── main.py
-│   │   Entry point of the FastAPI application. Initializes the app and registers routes.
+│   │   Entry point of the FastAPI application. Initializes app and routes.
 │   │
 │   ├── api/
-│   │   Contains all API route definitions.
-│   │
 │   │   ├── routes_cv.py
-│   │   │   Handles CV upload and processing endpoints.
+│   │   │   Handles CV upload endpoints.
 │   │   │
 │   │   ├── routes_analysis.py
-│   │   │   Handles AI analysis requests and responses.
+│   │   │   Handles AI analysis requests.
 │   │   │
 │   │   └── routes_jobs.py
-│   │       Handles job input or predefined job roles.
+│   │       Handles job related inputs.
 │   │
 │   ├── core/
-│   │   Core configuration and infrastructure setup.
-│   │
 │   │   ├── config.py
-│   │   │   Manages environment variables and application settings.
+│   │   │   Environment configuration.
 │   │   │
 │   │   └── database.py
-│   │       Initializes database connection and session management.
+│   │       Database connection setup.
 │   │
 │   ├── models/
-│   │   Database models using SQLAlchemy.
-│   │
 │   │   ├── cv.py
-│   │   │   Defines the CV table schema.
+│   │   │   CV table definition.
 │   │   │
 │   │   ├── analysis.py
-│   │   │   Stores analysis results such as match scores and insights.
+│   │   │   Analysis results schema.
 │   │   │
 │   │   └── job.py
-│   │       Stores job descriptions or predefined roles.
+│   │       Job descriptions schema.
 │   │
 │   ├── schemas/
-│   │   Pydantic schemas for request and response validation.
-│   │
 │   │   ├── cv_schema.py
-│   │   │   Defines input/output structure for CV operations.
-│   │   │
 │   │   ├── analysis_schema.py
-│   │   │   Defines structure of AI analysis responses.
-│   │   │
 │   │   └── job_schema.py
-│   │       Defines job related request and response formats.
 │   │
 │   ├── services/
-│   │   Core business logic layer.
-│   │
 │   │   ├── cv_parser.py
-│   │   │   Extracts and cleans text from CV PDFs using pdfplumber.
+│   │   │   Extracts CV text using pdfplumber.
 │   │   │
 │   │   ├── ai_engine.py
-│   │   │   Handles communication with AI models and generates insights.
+│   │   │   Handles AI interactions.
 │   │   │
 │   │   ├── job_matcher.py
-│   │   │   Computes match scores between CV and job descriptions.
+│   │   │   Computes match scores.
 │   │   │
 │   │   └── roadmap_generator.py
-│   │       Generates career improvement plans based on analysis.
+│   │       Generates improvement plans.
 │   │
 │   └── utils/
 │       └── helpers.py
-│           Utility functions used across the application.
+│
+├── Dockerfile
+│   Defines backend container image.
+│
+├── .dockerignore
+│   Excludes unnecessary files from image.
 │
 ├── requirements.txt
-│   Python dependencies for backend.
+│   Backend dependencies.
 │
 └── .env
-    Environment variables such as database URL and API keys.
+    Environment variables.
 
 frontend/
 │
 ├── src/
 │   ├── components/
-│   │   Reusable UI components (cards, forms, buttons).
-│   │
 │   ├── pages/
-│   │   Page level components (Landing, Upload, Results).
-│   │
 │   ├── services/
-│   │   Handles API calls to backend.
-│   │
 │   ├── hooks/
-│   │   Custom React hooks for state and logic reuse.
-│   │
 │   ├── App.jsx
-│   │   Root React component.
-│   │
 │   ├── main.jsx
-│   │   Application entry point.
-│   │
 │   └── index.css
-│       Global styles.
 │
 ├── package.json
-│   Project dependencies and scripts.
-│
 └── vite.config.js
-    Configuration for Vite build tool.
+```
+
+---
+
+## Backend Containerization
+
+### Dockerfile
+
+```dockerfile id="p7d1hf"
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+---
+
+### .dockerignore
+
+```text id="2n2n4m"
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+```
+
+---
+
+## Running Backend with Docker
+
+### Build Image
+
+```bash id="3h4c6q"
+docker build -t career-ai-backend .
+```
+
+### Run Container
+
+```bash id="9tq1xl"
+docker run -d -p 8000:8000 --env-file .env career-ai-backend
 ```
 
 ---
 
 ## Backend Overview
 
-The backend is built using `FastAPI` and follows a modular architecture.
+The backend uses FastAPI and follows a modular service oriented architecture.
 
-### Key Responsibilities
+Responsibilities include:
 
-* Handle HTTP requests
-* Coordinate AI processing
-* Manage database interactions
-* Return structured responses
+* API routing
+* AI orchestration
+* Data persistence
+* CV processing
 
-The separation of `api`, `services`, and `models` ensures maintainability and scalability.
+Docker ensures:
+
+* Environment consistency
+* Easy deployment
+* Isolation of dependencies
 
 ---
 
 ## Database Design
 
-The system uses `PostgreSQL` to persist application data.
+The system uses PostgreSQL for persistent storage.
 
-### Why a Database Without Authentication
+### Purpose
 
-* Avoid repeated AI computations
-* Improve response speed through caching
-* Enable reuse of previous analyses
-* Support future feature expansion
+* Cache AI results
+* Store CV content
+* Improve performance
+* Enable future features
 
 ### Core Tables
 
 * `cvs`
-  Stores extracted CV content
-
 * `analyses`
-  Stores match scores, skill gaps, and recommendations
-
 * `jobs`
-  Stores job descriptions
 
 ---
 
@@ -226,15 +250,15 @@ The system uses `PostgreSQL` to persist application data.
 
 ### POST `/cv/upload`
 
-Uploads and processes a CV file
+Uploads and processes CV
 
 ### POST `/analysis`
 
-Performs AI based analysis
+Performs AI analysis
 
 ### GET `/analysis`
 
-Retrieves stored analysis results
+Fetches stored results
 
 ---
 
@@ -242,38 +266,26 @@ Retrieves stored analysis results
 
 ### Prerequisites
 
-* Python 3.10 or higher
-* Node.js 18 or higher
-* PostgreSQL instance
+* Docker
+* Node.js
+* PostgreSQL
 * OpenAI API key
 
 ---
 
-### Backend Setup
+### Backend Setup with Docker
 
-```bash
+```bash id="h7t9yk"
 cd backend
-pip install -r requirements.txt
-```
-
-Create `.env` file:
-
-```env
-DATABASE_URL=your_postgresql_connection_string
-OPENAI_API_KEY=your_api_key
-```
-
-Run server:
-
-```bash
-uvicorn app.main:app --reload
+docker build -t career-ai-backend .
+docker run -p 8000:8000 --env-file .env career-ai-backend
 ```
 
 ---
 
 ### Frontend Setup
 
-```bash
+```bash id="w8k2mf"
 cd frontend
 npm install
 npm run dev
@@ -285,21 +297,23 @@ npm run dev
 
 ### Frontend
 
-Deployed on Vercel for fast global delivery
+Deploy on Vercel
 
 ### Backend
 
-Deployed on Azure App Service
+Deploy Docker container to Azure App Service or Azure Container Apps
 
 ### Database
 
-Hosted on Azure Database for PostgreSQL
+Azure Database for PostgreSQL
 
 ---
 
 ## Performance Strategy
 
-The system minimizes redundant AI calls by caching analysis results in the database. When similar inputs are detected, stored results are returned instead of recomputing them.
+* Cache AI outputs in PostgreSQL
+* Avoid redundant API calls
+* Preprocess CV text before AI usage
 
 ---
 
@@ -307,20 +321,18 @@ The system minimizes redundant AI calls by caching analysis results in the datab
 
 This project is licensed under the MIT License.
 
-This means the software can be used, modified, and distributed freely, provided that the original license and copyright notice are included.
-
 ---
 
 ## Future Improvements
 
-* User authentication and dashboards
-* Analysis history and comparison
-* AI career assistant
-* Integration with job platforms
+* Authentication system
+* Analysis history
+* AI assistant
+* Job recommendation engine
 * Advanced analytics
 
 ---
 
 ## Contribution
 
-Contributions are welcome. Fork the repository, create a feature branch, and submit a pull request with clear descriptions of changes.
+Fork the repository and submit pull requests with clear documentation.
