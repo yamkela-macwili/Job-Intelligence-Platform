@@ -19,6 +19,8 @@ class Analysis(Base):
         strengths: JSON array of CV strengths
         recommendations: Text recommendations for improvement
         roadmap: Structured career development roadmap
+        key_gaps: JSON array of identified gaps
+        suitable_roles: JSON array of roles candidate is suited for
         created_at: Timestamp of analysis creation
     """
     
@@ -32,6 +34,8 @@ class Analysis(Base):
     strengths = Column(Text, nullable=True, default="[]")
     recommendations = Column(Text, nullable=True)
     roadmap = Column(Text, nullable=True)
+    key_gaps = Column(Text, nullable=True, default="[]")
+    suitable_roles = Column(Text, nullable=True, default="[]")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     __table_args__ = (
