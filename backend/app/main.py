@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from core.database import init_db
 from core.config import settings
 from app.api import routes_cv, routes_jobs, routes_analysis
@@ -35,6 +36,17 @@ app.add_middleware(
 
 
 # Custom exception handlers
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    """Log detailed validation errors."""
+    logger.error(f"Validation error for {request.url}: {exc.errors()}")
+    logger.error(f"Request body: {exc.body}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body}
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Handle all exceptions globally."""
