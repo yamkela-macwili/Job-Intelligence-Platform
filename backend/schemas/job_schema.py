@@ -1,8 +1,8 @@
-""" Defines job related request and response formats."""
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Any
 from datetime import datetime
 from uuid import UUID
+import json
 
 
 class JobBase(BaseModel):
@@ -24,6 +24,17 @@ class JobResponse(JobBase):
     id: UUID
     skills_required: Optional[List[str]] = None
     created_at: datetime
+
+    @field_validator("skills_required", mode="before")
+    @classmethod
+    def parse_skills(cls, v: Any) -> Any:
+        """Parse JSON string to list if needed."""
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return v
     
     class Config:
         from_attributes = True
