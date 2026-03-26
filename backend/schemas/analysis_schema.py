@@ -1,6 +1,5 @@
-"""Defines structure of AI analysis responses."""
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Any
 from datetime import datetime
 from uuid import UUID
 
@@ -11,6 +10,14 @@ class AnalysisRequest(BaseModel):
     cv_id: UUID = Field(..., description="ID of the CV to analyze")
     job_id: Optional[UUID] = Field(None, description="ID of the job to match (optional)")
     job_description: Optional[str] = Field(None, description="Job description if no job_id")
+
+    @field_validator("cv_id", "job_id", mode="before")
+    @classmethod
+    def empty_string_to_none(cls, v: Any) -> Any:
+        """Convert empty strings to None before validation."""
+        if v == "":
+            return None
+        return v
 
 
 class SkillGap(BaseModel):
@@ -36,6 +43,8 @@ class AnalysisResponse(BaseModel):
     match_score: int = Field(..., ge=0, le=100, description="Match score 0-100")
     missing_skills: List[SkillGap] = Field(default_factory=list, description="Skills missing from CV")
     strengths: List[Strength] = Field(default_factory=list, description="CV strengths")
+    key_gaps: List[str] = Field(default_factory=list, description="Identified gaps")
+    suitable_roles: List[str] = Field(default_factory=list, description="Suitable roles")
     recommendations: str = Field(..., description="Improvement recommendations")
     roadmap: str = Field(..., description="Career development roadmap")
     created_at: datetime
