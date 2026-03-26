@@ -13,9 +13,9 @@ class Settings(BaseSettings):
         "postgresql://user:password@localhost:5432/job_intelligence"
     )
     
-    # OpenAI Configuration
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_model: str = "gpt-3.5-turbo"
+    # Gemini Configuration
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     
     # Application Configuration
     environment: str = os.getenv("ENVIRONMENT", "development")
