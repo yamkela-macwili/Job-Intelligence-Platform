@@ -130,3 +130,35 @@ def validate_uuid(uuid_str: str) -> bool:
         re.IGNORECASE
     )
     return bool(uuid_pattern.match(str(uuid_str)))
+def extract_json_from_text(text: str) -> str:
+    """
+    Extract JSON string from text, handling potential markdown markers or extra text.
+    
+    Args:
+        text: Raw text containing JSON
+        
+    Returns:
+        Extracted JSON string
+    """
+    if not text:
+        return ""
+        
+    # Look for JSON code blocks
+    json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
+    if json_match:
+        return json_match.group(1).strip()
+        
+    # Look for any code blocks if no json marker
+    code_match = re.search(r'```\s*(.*?)\s*```', text, re.DOTALL)
+    if code_match:
+        return code_match.group(1).strip()
+        
+    # Look for the first { and last }
+    try:
+        start_idx = text.index('{')
+        end_idx = text.rindex('}') + 1
+        return text[start_idx:end_idx]
+    except ValueError:
+        pass
+        
+    return text.strip()
