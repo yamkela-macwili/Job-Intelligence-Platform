@@ -76,25 +76,15 @@ async def create_analysis(
             logger.info(f"Returning cached analysis: {cached_analysis.id}")
             return _format_analysis_response(cached_analysis)
         
-        # Extract skills from CV
-        cv_skills = parse_json_safely(cv.skills_extracted, [])
+        # Perform comprehensive AI analysis
+        ai_analysis = AIEngine.analyze_job_match(cv.raw_text, job_description)
         
-        # Extract skills from job
-        job_requirements = AIEngine.extract_job_requirements(job_description)
-        job_skills = job_requirements.get("required_skills", [])
-        
-        # Compute match score
-        match_score = JobMatcher.compute_match_score(cv_skills, job_skills)
-        
-        # Identify missing skills
-        missing_skills = JobMatcher.identify_missing_skills(cv_skills, job_skills)
-        
-        # Identify strengths
-        strengths = JobMatcher.identify_strengths(cv_skills)
-        
-        # Generate recommendations
-        missing_skill_names = [s["skill"] for s in missing_skills[:5]]
-        recommendations = AIEngine.generate_recommendations(cv.raw_text, missing_skill_names)
+        match_score = ai_analysis.get("match_score", 0)
+        missing_skills = ai_analysis.get("missing_skills", [])
+        strengths = ai_analysis.get("strengths", [])
+        key_gaps = ai_analysis.get("key_gaps", [])
+        suitable_roles = ai_analysis.get("suitable_roles", [])
+        recommendations = ai_analysis.get("recommendations", "No recommendations available")
         
         # Generate roadmap
         roadmap = AIEngine.generate_career_roadmap(cv.raw_text, None)
@@ -106,6 +96,8 @@ async def create_analysis(
             match_score=match_score,
             missing_skills=json_to_string(missing_skills),
             strengths=json_to_string(strengths),
+            key_gaps=json_to_string(key_gaps),
+            suitable_roles=json_to_string(suitable_roles),
             recommendations=recommendations,
             roadmap=roadmap
         )
@@ -269,6 +261,8 @@ def _format_analysis_response(analysis: Analysis) -> AnalysisResponse:
     """
     missing_skills_data = parse_json_safely(analysis.missing_skills, [])
     strengths_data = parse_json_safely(analysis.strengths, [])
+    key_gaps = parse_json_safely(analysis.key_gaps, [])
+    suitable_roles = parse_json_safely(analysis.suitable_roles, [])
     
     # Convert to SkillGap objects
     missing_skills = [
@@ -289,6 +283,8 @@ def _format_analysis_response(analysis: Analysis) -> AnalysisResponse:
         match_score=analysis.match_score,
         missing_skills=missing_skills,
         strengths=strengths,
+        key_gaps=key_gaps,
+        suitable_roles=suitable_roles,
         recommendations=analysis.recommendations,
         roadmap=analysis.roadmap,
         created_at=analysis.created_at
