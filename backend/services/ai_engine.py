@@ -1,45 +1,70 @@
-"""Handles communication with AI models and generates insights."""
+"""Handles communication with Google Gemini model and generates career insights."""
 import logging
 import json
+import time
 from typing import Dict, List, Optional
-from openai import OpenAI
+import google.generativeai as genai
 from core.config import settings
-from utils.helpers import parse_json_safely, json_to_string
+from utils.helpers import extract_json_from_text
 
 logger = logging.getLogger(__name__)
 
-
 class AIEngine:
-    """Service for AI-powered analysis using OpenAI."""
-    
-    MODEL = settings.openai_model
-    
-    @staticmethod
-    def _get_client() -> OpenAI:
-        """Get OpenAI client instance."""
-        return OpenAI(api_key=settings.openai_api_key)
-    
-    @staticmethod
-    def analyze_job_match(cv_text: str, job_description: str) -> Dict:
+    """Service for AI-powered analysis using Google Gemini."""
+
+    MAX_RETRIES = 3
+    BASE_DELAY = 2  # seconds
+
+    def __init__(self):
+        """Initialize the Gemini client."""
+        genai.configure(api_key=settings.gemini_api_key)
+        self.model = genai.GenerativeModel(settings.gemini_model)
+        logger.info(f"AIEngine initialized with model: {settings.gemini_model}")
+
+    def _generate_content(self, prompt: str) -> str:
+        """Call Gemini to generate content with retry logic for rate limits."""
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                response = self.model.generate_content(prompt)
+                if not response or not response.text:
+                    logger.error("Empty response from Gemini")
+                    return ""
+                return response.text
+            except Exception as e:
+                error_str = str(e)
+                is_rate_limit = "429" in error_str or "quota" in error_str.lower() or "rate" in error_str.lower()
+                
+                if is_rate_limit and attempt < self.MAX_RETRIES - 1:
+                    delay = self.BASE_DELAY * (2 ** attempt)
+                    logger.warning(f"Rate limited by Gemini (attempt {attempt + 1}/{self.MAX_RETRIES}). Retrying in {delay}s...")
+                    time.sleep(delay)
+                    continue
+                
+                logger.error(f"Error calling Gemini (attempt {attempt + 1}/{self.MAX_RETRIES}): {e}")
+                return ""
+        return ""
+
+    def analyze_job_match(self, cv_text: str, job_description: str) -> Dict:
         """
-        Analyze job match between CV and job description using AI.
+        Analyze the match between a CV and a job description.
         
         Args:
-            cv_text: Extracted CV text
-            job_description: Job description text
+            cv_text: Extracted text from CV
+            job_description: Full job description
             
         Returns:
-            Dictionary with match analysis results
+            Dict containing match_score, missing_skills, strengths, key_gaps, 
+                 recommendations, and suitable_roles.
         """
         try:
             prompt = f"""
 Analyze the match between this CV and job description. Provide your response in JSON format.
 
 CV Content:
-{cv_text[:2000]}
+{cv_text[:3000]}
 
 Job Description:
-{job_description[:2000]}
+{job_description[:3000]}
 
 Provide your analysis in this exact JSON format:
 {{
@@ -55,45 +80,37 @@ Provide your analysis in this exact JSON format:
     "suitable_roles": ["role1", "role2"]
 }}
 """
+            result_text = self._generate_content(prompt)
+            if not result_text:
+                raise ValueError("No response from AI")
+                
+            json_str = extract_json_from_text(result_text)
+            result = json.loads(json_str)
             
-            response = AIEngine._get_client().chat.completions.create(
-                model=AIEngine.MODEL,
-                messages=[
-                    {"role": "system", "content": "You are an expert career analyst and HR professional."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1500
-            )
-            
-            result_text = response.choices[0].message.content
-            result = json.loads(result_text)
-            
-            logger.info("Successfully completed job match analysis")
+            logger.info("Successfully completed job match analysis using Gemini")
             return result
             
         except Exception as e:
-            logger.error(f"Error in job match analysis: {e}")
+            logger.error(f"Error in Gemini job match analysis: {e}")
             return {
                 "match_score": 0,
                 "missing_skills": [],
                 "strengths": [],
                 "key_gaps": [],
-                "recommendations": "Unable to complete analysis",
+                "recommendations": "Unable to complete analysis at this time",
                 "suitable_roles": []
             }
-    
-    @staticmethod
-    def generate_career_roadmap(cv_text: str, target_role: Optional[str] = None) -> str:
+
+    def generate_career_roadmap(self, cv_text: str, target_role: Optional[str] = None) -> str:
         """
-        Generate career development roadmap using AI.
+        Generate a detailed career development roadmap based on CV.
         
         Args:
-            cv_text: Extracted CV text
-            target_role: Optional target role
+            cv_text: Extracted text from CV
+            target_role: Optional target role for specific guidance
             
         Returns:
-            Structured career roadmap text
+            Formatted career roadmap text
         """
         try:
             target_context = f"with target role: {target_role}" if target_role else ""
@@ -102,7 +119,7 @@ Provide your analysis in this exact JSON format:
 Based on this CV {target_context}, create a detailed career development roadmap.
 
 CV Summary:
-{cv_text[:2000]}
+{cv_text[:3000]}
 
 Provide a comprehensive roadmap in this format:
 1. Current Position Analysis
@@ -127,35 +144,26 @@ Provide a comprehensive roadmap in this format:
    
 6. Timeline and Milestones
 """
+            roadmap = self._generate_content(prompt)
+            if not roadmap:
+                return "Unable to generate roadmap at this time"
             
-            response = AIEngine._get_client().chat.completions.create(
-                model=AIEngine.MODEL,
-                messages=[
-                    {"role": "system", "content": "You are an expert career coach and mentoring professional."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
-            
-            roadmap = response.choices[0].message.content
-            logger.info("Successfully generated career roadmap")
+            logger.info("Successfully generated career roadmap using Gemini")
             return roadmap
             
         except Exception as e:
-            logger.error(f"Error generating roadmap: {e}")
+            logger.error(f"Error generating roadmap using Gemini: {e}")
             return "Unable to generate roadmap at this time"
-    
-    @staticmethod
-    def extract_job_requirements(job_description: str) -> Dict:
+
+    def extract_job_requirements(self, job_description: str) -> Dict:
         """
-        Extract structured requirements from job description using AI.
+        Extract structured data from a job description.
         
         Args:
-            job_description: Job description text
+            job_description: Raw job description text
             
         Returns:
-            Dictionary with structured requirements
+            Dict containing skills, experience, and other requirements.
         """
         try:
             prompt = f"""
@@ -177,25 +185,18 @@ Provide your response in this exact JSON format:
     "soft_skills": ["skill1", "skill2"]
 }}
 """
+            result_text = self._generate_content(prompt)
+            if not result_text:
+                raise ValueError("No response from AI")
+                
+            json_str = extract_json_from_text(result_text)
+            result = json.loads(json_str)
             
-            response = AIEngine._get_client().chat.completions.create(
-                model=AIEngine.MODEL,
-                messages=[
-                    {"role": "system", "content": "You are an expert in job analysis and requirements extraction."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.5,
-                max_tokens=1000
-            )
-            
-            result_text = response.choices[0].message.content
-            result = json.loads(result_text)
-            
-            logger.info("Successfully extracted job requirements")
+            logger.info("Successfully extracted job requirements using Gemini")
             return result
             
         except Exception as e:
-            logger.error(f"Error extracting job requirements: {e}")
+            logger.error(f"Error extracting job requirements using Gemini: {e}")
             return {
                 "required_skills": [],
                 "nice_to_have_skills": [],
@@ -207,18 +208,17 @@ Provide your response in this exact JSON format:
                 "required_languages": [],
                 "soft_skills": []
             }
-    
-    @staticmethod
-    def generate_recommendations(cv_text: str, missing_skills: List[str]) -> str:
+
+    def generate_recommendations(self, cv_text: str, missing_skills: List[str]) -> str:
         """
-        Generate personalized improvement recommendations.
+        Generate specific actionable improvement recommendations.
         
         Args:
-            cv_text: Extracted CV text
-            missing_skills: List of missing skills
+            cv_text: Extracted text from CV
+            missing_skills: List of skills to focus on
             
         Returns:
-            Detailed recommendations text
+            Formatted recommendations text.
         """
         try:
             skills_text = ", ".join(missing_skills)
@@ -227,7 +227,7 @@ Provide your response in this exact JSON format:
 Based on this CV and the candidate's missing skills, provide specific actionable recommendations.
 
 CV Summary:
-{cv_text[:2000]}
+{cv_text[:3000]}
 
 Missing Skills: {skills_text}
 
@@ -239,21 +239,16 @@ Provide detailed recommendations covering:
 5. Networking and portfolio building suggestions
 6. Interview preparation tips
 """
-            
-            response = AIEngine._get_client().chat.completions.create(
-                model=AIEngine.MODEL,
-                messages=[
-                    {"role": "system", "content": "You are an expert career coach providing personalized career development advice."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1500
-            )
-            
-            recommendations = response.choices[0].message.content
-            logger.info("Successfully generated recommendations")
+            recommendations = self._generate_content(prompt)
+            if not recommendations:
+                return "Unable to generate recommendations at this time"
+                
+            logger.info("Successfully generated recommendations using Gemini")
             return recommendations
             
         except Exception as e:
-            logger.error(f"Error generating recommendations: {e}")
+            logger.error(f"Error generating recommendations using Gemini: {e}")
             return "Unable to generate recommendations at this time"
+
+# Instance for easy import
+AIEngine = AIEngine()
