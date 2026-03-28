@@ -1,46 +1,67 @@
-"""Handles communication with Google Gemini model and generates career insights."""
+"""Handles communication with Azure AI Projects Agent and generates career insights."""
 import logging
 import json
 import time
 from typing import Dict, List, Optional
-import google.generativeai as genai
+from openai import AzureOpenAI
 from core.config import settings
 from utils.helpers import extract_json_from_text
 
 logger = logging.getLogger(__name__)
 
 class AIEngine:
-    """Service for AI-powered analysis using Google Gemini."""
+    """Service for AI-powered analysis using Azure OpenAI."""
 
     MAX_RETRIES = 3
     BASE_DELAY = 2  # seconds
 
     def __init__(self):
-        """Initialize the Gemini client."""
-        genai.configure(api_key=settings.gemini_api_key)
-        self.model = genai.GenerativeModel(settings.gemini_model)
-        logger.info(f"AIEngine initialized with model: {settings.gemini_model}")
+        """Initialize the Azure OpenAI client."""
+        try:
+            self.client = AzureOpenAI(
+                api_key=settings.azure_ai_api_key,
+                api_version="2024-02-15-preview",
+                azure_endpoint=settings.azure_ai_endpoint
+            )
+            logger.info("Azure OpenAI client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Azure OpenAI client: {e}")
+            self.client = None
 
     def _generate_content(self, prompt: str) -> str:
-        """Call Gemini to generate content with retry logic for rate limits."""
+        """Call Azure OpenAI to generate content with retry logic for rate limits."""
+        if not self.client:
+            logger.error("Azure OpenAI client not initialized")
+            return ""
+            
         for attempt in range(self.MAX_RETRIES):
             try:
-                response = self.model.generate_content(prompt)
-                if not response or not response.text:
-                    logger.error("Empty response from Gemini")
+                response = self.client.chat.completions.create(
+                    model=settings.azure_ai_model_deployment_name,
+                    messages=[
+                        {"role": "system", "content": "You are an expert career intelligence AI. You analyze resumes and job descriptions to provide precise JSON evaluations. Output ONLY valid JSON where explicitly requested."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+                
+                if not response or not response.choices:
+                    logger.error("Empty response from Azure OpenAI")
                     return ""
-                return response.text
+                
+                return response.choices[0].message.content
             except Exception as e:
                 error_str = str(e)
                 is_rate_limit = "429" in error_str or "quota" in error_str.lower() or "rate" in error_str.lower()
                 
                 if is_rate_limit and attempt < self.MAX_RETRIES - 1:
                     delay = self.BASE_DELAY * (2 ** attempt)
-                    logger.warning(f"Rate limited by Gemini (attempt {attempt + 1}/{self.MAX_RETRIES}). Retrying in {delay}s...")
+                    logger.warning(f"Rate limited by Azure OpenAI (attempt {attempt + 1}/{self.MAX_RETRIES}). Retrying in {delay}s...")
                     time.sleep(delay)
                     continue
                 
-                logger.error(f"Error calling Gemini (attempt {attempt + 1}/{self.MAX_RETRIES}): {e}")
+                logger.error(f"Error calling Azure OpenAI (attempt {attempt + 1}/{self.MAX_RETRIES}): {e}")
                 return ""
         return ""
 
@@ -87,11 +108,11 @@ Provide your analysis in this exact JSON format:
             json_str = extract_json_from_text(result_text)
             result = json.loads(json_str)
             
-            logger.info("Successfully completed job match analysis using Gemini")
+            logger.info("Successfully completed job match analysis using Azure OpenAI")
             return result
             
         except Exception as e:
-            logger.error(f"Error in Gemini job match analysis: {e}")
+            logger.error(f"Error in Azure OpenAI job match analysis: {e}")
             return {
                 "match_score": 0,
                 "missing_skills": [],
@@ -110,50 +131,67 @@ Provide your analysis in this exact JSON format:
             target_role: Optional target role for specific guidance
             
         Returns:
-            Formatted career roadmap text
+            Formatted career roadmap as JSON string
         """
         try:
             target_context = f"with target role: {target_role}" if target_role else ""
             
             prompt = f"""
-Based on this CV {target_context}, create a detailed career development roadmap.
+Based on this CV {target_context}, create a detailed career development roadmap in JSON format.
 
 CV Summary:
 {cv_text[:3000]}
 
-Provide a comprehensive roadmap in this format:
-1. Current Position Analysis
-   - Current skills level
-   - Current experience gaps
-   
-2. Short-term Goals (3-6 months)
-   - Skills to acquire
-   - Projects to undertake
-   
-3. Medium-term Goals (6-12 months)
-   - Career progression steps
-   - Certifications to pursue
-   
-4. Long-term Goals (1-2 years)
-   - Target positions
-   - Industry transitions
-   
-5. Learning Resources
-   - Recommended courses
-   - Books and materials
-   
-6. Timeline and Milestones
+Provide a comprehensive roadmap in this exact JSON format:
+{{
+    "current_position_analysis": {{
+        "current_skills": ["skill1", "skill2"],
+        "experience_gaps": ["gap1", "gap2"]
+    }},
+    "short_term_goals": {{
+        "timeline": "3-6 months",
+        "skills_to_acquire": ["skill1", "skill2"],
+        "projects": ["project1", "project2"]
+    }},
+    "medium_term_goals": {{
+        "timeline": "6-12 months",
+        "career_progression": ["step1", "step2"],
+        "certifications": ["cert1", "cert2"]
+    }},
+    "long_term_goals": {{
+        "timeline": "1-2 years",
+        "target_positions": ["role1", "role2"],
+        "industry_transitions": ["transition1"]
+    }},
+    "learning_resources": {{
+        "courses": ["course1", "course2"],
+        "books": ["book1", "book2"],
+        "platforms": ["platform1", "platform2"]
+    }},
+    "milestones": [
+        {{"milestone": "Milestone 1", "target_date": "2026-06"}},
+        {{"milestone": "Milestone 2", "target_date": "2026-12"}}
+    ]
+}}
 """
-            roadmap = self._generate_content(prompt)
-            if not roadmap:
-                return "Unable to generate roadmap at this time"
+            roadmap_text = self._generate_content(prompt)
+            if not roadmap_text:
+                return json.dumps({"error": "Unable to generate roadmap at this time"})
             
-            logger.info("Successfully generated career roadmap using Gemini")
-            return roadmap
+            # Extract JSON from the response
+            try:
+                json_str = extract_json_from_text(roadmap_text)
+                json.loads(json_str)  # Validate it's valid JSON
+                logger.info("Successfully generated career roadmap using Azure OpenAI")
+                return json_str
+            except:
+                # If not JSON, return it as-is wrapped in JSON
+                logger.info("Successfully generated career roadmap using Azure OpenAI (as text)")
+                return json.dumps({"roadmap_text": roadmap_text})
             
         except Exception as e:
-            logger.error(f"Error generating roadmap using Gemini: {e}")
-            return "Unable to generate roadmap at this time"
+            logger.error(f"Error generating roadmap using Azure OpenAI: {e}")
+            return json.dumps({"error": "Unable to generate roadmap at this time"})
 
     def extract_job_requirements(self, job_description: str) -> Dict:
         """
@@ -192,11 +230,11 @@ Provide your response in this exact JSON format:
             json_str = extract_json_from_text(result_text)
             result = json.loads(json_str)
             
-            logger.info("Successfully extracted job requirements using Gemini")
+            logger.info("Successfully extracted job requirements using Azure OpenAI")
             return result
             
         except Exception as e:
-            logger.error(f"Error extracting job requirements using Gemini: {e}")
+            logger.error(f"Error extracting job requirements using Azure OpenAI: {e}")
             return {
                 "required_skills": [],
                 "nice_to_have_skills": [],
@@ -243,11 +281,11 @@ Provide detailed recommendations covering:
             if not recommendations:
                 return "Unable to generate recommendations at this time"
                 
-            logger.info("Successfully generated recommendations using Gemini")
+            logger.info("Successfully generated recommendations using Azure OpenAI")
             return recommendations
             
         except Exception as e:
-            logger.error(f"Error generating recommendations using Gemini: {e}")
+            logger.error(f"Error generating recommendations using Azure OpenAI: {e}")
             return "Unable to generate recommendations at this time"
 
 # Instance for easy import
