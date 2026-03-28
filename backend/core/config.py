@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     
     # Application Configuration
     environment: str = os.getenv("ENVIRONMENT", "development")
-    debug: bool = os.getenv("DEBUG", "True").lower() == "true"
+    debug: bool = os.getenv("DEBUG", "False").lower() == "true"  # Default False for production
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     
     # API Configuration
