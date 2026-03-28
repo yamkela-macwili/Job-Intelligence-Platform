@@ -13,9 +13,11 @@ class Settings(BaseSettings):
         "postgresql://user:password@localhost:5432/job_intelligence"
     )
     
-    # Gemini Configuration
-    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    # Azure AI Projects Configuration
+    azure_ai_api_key: str = os.getenv("AZURE_AI_API_KEY", "")
+    azure_ai_endpoint: str = os.getenv("AZURE_AI_ENDPOINT", "https://job-intel-open-ai.services.ai.azure.com/api/projects/job-intel")
+    azure_ai_agent_name: str = os.getenv("AZURE_AI_AGENT_NAME", "job-intel-agent")
+    azure_ai_model_deployment_name: str = os.getenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4o")
     
     # Application Configuration
     environment: str = os.getenv("ENVIRONMENT", "development")
