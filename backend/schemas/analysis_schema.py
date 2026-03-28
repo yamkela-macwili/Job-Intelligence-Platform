@@ -46,7 +46,7 @@ class AnalysisResponse(BaseModel):
     key_gaps: List[str] = Field(default_factory=list, description="Identified gaps")
     suitable_roles: List[str] = Field(default_factory=list, description="Suitable roles")
     recommendations: str = Field(..., description="Improvement recommendations")
-    roadmap: str = Field(..., description="Career development roadmap")
+    roadmap: Any = Field(..., description="Career development roadmap (JSON object or string)")
     created_at: datetime
     
     class Config:
