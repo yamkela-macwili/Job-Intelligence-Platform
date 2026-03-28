@@ -264,6 +264,13 @@ def _format_analysis_response(analysis: Analysis) -> AnalysisResponse:
     key_gaps = parse_json_safely(analysis.key_gaps, [])
     suitable_roles = parse_json_safely(analysis.suitable_roles, [])
     
+    # Parse roadmap - try to parse as JSON first, otherwise keep as string
+    roadmap_data = analysis.roadmap
+    try:
+        roadmap_data = parse_json_safely(analysis.roadmap, analysis.roadmap)
+    except:
+        pass  # If parsing fails, keep original roadmap string
+    
     # Convert to SkillGap objects
     missing_skills = [
         SkillGap(skill=s["skill"], importance=s["importance"])
@@ -286,6 +293,6 @@ def _format_analysis_response(analysis: Analysis) -> AnalysisResponse:
         key_gaps=key_gaps,
         suitable_roles=suitable_roles,
         recommendations=analysis.recommendations,
-        roadmap=analysis.roadmap,
+        roadmap=roadmap_data,
         created_at=analysis.created_at
     )
