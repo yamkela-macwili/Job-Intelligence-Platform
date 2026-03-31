@@ -29,7 +29,11 @@ export const useAnalysis = () => {
       navigate("/job");
     } catch (err) {
       console.error("Upload error:", err);
-      // Fallback for demo if backend fails
+      console.error("Error status:", err.response?.status);
+      console.error("Error message:", err.message);
+      
+      // Fallback for demo if backend fails - allow app to work offline
+      console.log("Using demo CV fallback due to API error");
       const demoId = "demo-cv-id";
       setCvId(demoId);
       navigate("/job");
@@ -52,14 +56,23 @@ export const useAnalysis = () => {
       runAnalysis(response.data.id);
     } catch (err) {
       console.error("Job submit error:", err);
-      const msg = err.response?.data?.detail || "Failed to submit job. Please try again.";
+      console.error("Error status:", err.response?.status);
+      console.error("Error message:", err.message);
+      
+      const msg = err.response?.data?.detail || err.message || "Failed to submit job. Please try again.";
       setError(msg);
-      // Fallback for demo
-      if (err.response?.status === 404 || err.response?.status === 500) {
-        setJobData({ title: "Demo Role", description: typeof jobInput === 'string' ? jobInput : jobInput.description });
-        navigate("/loading");
-        runAnalysis("demo-job-id");
-      }
+      
+      // Fallback for demo - use demo data if API fails for any reason
+      // This allows the app to work even if backend is temporarily unavailable
+      console.log("Using demo fallback due to API error");
+      const demoDesc = typeof jobInput === 'string' ? jobInput : jobInput.description;
+      setJobData({ 
+        id: "demo-job-id",
+        title: typeof jobInput === 'string' ? "Target Role" : jobInput.title,
+        description: demoDesc
+      });
+      navigate("/loading");
+      runAnalysis("demo-job-id");
     } finally {
       setLoading(false);
     }
