@@ -71,13 +71,15 @@ async def startup_event():
     logger.info(f"Starting {settings.api_title}")
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Debug: {settings.debug}")
+    logger.info(f"Database URL configured: {'Yes' if os.getenv('DATABASE_URL') else 'No'}")
     
     try:
         init_db()
         logger.info("Database initialized successfully")
     except Exception as e:
-        logger.warning(f"Failed to initialize database (non-blocking): {e}")
+        logger.warning(f"Failed to initialize database (non-blocking): {str(e)[:200]}")
         logger.info("Application will continue without database initialization")
+        logger.info("Features requiring database may not work until connection is restored")
 
 
 # Shutdown event

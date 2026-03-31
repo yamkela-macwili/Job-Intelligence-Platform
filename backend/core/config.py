@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     # Database Configuration
     database_url: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://user:password@localhost:5432/job_intelligence"
+        ""  # Empty string - will raise error if not set, forcing proper configuration
     )
     
     # Azure AI Projects Configuration
