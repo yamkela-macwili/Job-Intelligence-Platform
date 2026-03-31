@@ -73,50 +73,92 @@ const ResultsPage = () => {
       
       // If roadmap is already an array, use it
       if (Array.isArray(roadmapData)) {
-        return roadmapData.map(r => typeof r === 'string' ? { step: "Step", task: r } : r);
+        return roadmapData.filter(r => r).map(r => typeof r === 'string' ? { step: "Step", task: r } : r);
       }
       
       // If roadmap is a string, try to parse as JSON first
-      if (typeof roadmapData === 'string') {
+      if (typeof roadmapData === 'string' && roadmapData.trim()) {
         try {
           const parsed = JSON.parse(roadmapData);
+          
+          // If it's an error response, return empty array
+          if (parsed.error) {
+            return [];
+          }
+          
           // Extract milestones if available
           if (parsed.milestones && Array.isArray(parsed.milestones)) {
-            return parsed.milestones.map(m => ({ 
-              step: m.milestone || "Milestone", 
-              task: m.target_date ? `${m.milestone} (Target: ${m.target_date})` : m.milestone 
-            }));
+            return parsed.milestones
+              .filter(m => m && m.milestone)
+              .map(m => ({ 
+                step: m.milestone || "Milestone", 
+                task: m.target_date ? `${m.milestone} (Target: ${m.target_date})` : m.milestone 
+              }));
           }
-          // Extract from other fields
-          if (parsed.timeline && parsed.timeline.milestones) {
-            return parsed.timeline.milestones.map((m, i) => ({ 
-              step: `Phase ${i + 1}`, 
-              task: typeof m === 'string' ? m : (m.step || m.title || JSON.stringify(m)) 
-            }));
+          
+          // Extract from short_term_goals, medium_term_goals, long_term_goals
+          const goals = [];
+          if (parsed.short_term_goals) {
+            goals.push({ step: "Short Term (3-6 months)", task: JSON.stringify(parsed.short_term_goals, null, 2) });
           }
-          // Use the whole object as a single roadmap item
-          return [{ step: "Career Path", task: JSON.stringify(parsed, null, 2) }];
+          if (parsed.medium_term_goals) {
+            goals.push({ step: "Medium Term (6-12 months)", task: JSON.stringify(parsed.medium_term_goals, null, 2) });
+          }
+          if (parsed.long_term_goals) {
+            goals.push({ step: "Long Term (1-2 years)", task: JSON.stringify(parsed.long_term_goals, null, 2) });
+          }
+          
+          if (goals.length > 0) {
+            return goals;
+          }
+          
+          // If no structured data found, return empty (don't show raw JSON)
+          return [];
         } catch (e) {
-          // If JSON parsing fails, split by newlines
-          return roadmapData.split("\n").filter(r => r.trim()).map((r, i) => {
-            const colonIdx = r.indexOf(":");
-            if (colonIdx > -1) {
-              return { step: r.slice(0, colonIdx).trim(), task: r.slice(colonIdx + 1).trim() };
-            }
-            return { step: `Step ${i + 1}`, task: r.trim() };
-          });
+          // If JSON parsing fails, try to split by newlines
+          const lines = roadmapData.split("\n").filter(r => r.trim());
+          if (lines.length > 0) {
+            return lines.map((r, i) => {
+              const colonIdx = r.indexOf(":");
+              if (colonIdx > -1) {
+                return { step: r.slice(0, colonIdx).trim(), task: r.slice(colonIdx + 1).trim() };
+              }
+              return { step: `Step ${i + 1}`, task: r.trim() };
+            });
+          }
+          return [];
         }
       }
       
       // If roadmap is an object, extract milestones
       if (typeof roadmapData === 'object' && roadmapData !== null) {
-        if (roadmapData.milestones && Array.isArray(roadmapData.milestones)) {
-          return roadmapData.milestones.map(m => ({ 
-            step: m.milestone || "Milestone", 
-            task: m.target_date ? `${m.milestone} (Target: ${m.target_date})` : m.milestone 
-          }));
+        // Check for error
+        if (roadmapData.error) {
+          return [];
         }
-        return [{ step: "Career Path", task: JSON.stringify(roadmapData, null, 2) }];
+        
+        if (roadmapData.milestones && Array.isArray(roadmapData.milestones)) {
+          return roadmapData.milestones
+            .filter(m => m && m.milestone)
+            .map(m => ({ 
+              step: m.milestone || "Milestone", 
+              task: m.target_date ? `${m.milestone} (Target: ${m.target_date})` : m.milestone 
+            }));
+        }
+        
+        // Extract from goal fields
+        const goals = [];
+        if (roadmapData.short_term_goals) {
+          goals.push({ step: "Short Term (3-6 months)", task: JSON.stringify(roadmapData.short_term_goals, null, 2) });
+        }
+        if (roadmapData.medium_term_goals) {
+          goals.push({ step: "Medium Term (6-12 months)", task: JSON.stringify(roadmapData.medium_term_goals, null, 2) });
+        }
+        if (roadmapData.long_term_goals) {
+          goals.push({ step: "Long Term (1-2 years)", task: JSON.stringify(roadmapData.long_term_goals, null, 2) });
+        }
+        
+        return goals;
       }
       
       return [];

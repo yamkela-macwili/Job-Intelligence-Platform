@@ -113,36 +113,6 @@ const LandingPage = () => {
           </motion.div>
         </div>
 
-        {/* Abstract Hero Visual (Optional UI decoration) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }}
-          className="mt-20 relative mx-auto max-w-5xl"
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-50 via-transparent to-transparent z-10" />
-          <div className="rounded-2xl border border-gray-200/60 bg-white/40 backdrop-blur-xl shadow-2xl p-2 md:p-4 overflow-hidden">
-            <div className="rounded-xl border border-gray-100 bg-white overflow-hidden flex flex-col shadow-sm">
-              {/* Fake Window Header */}
-              <div className="h-12 border-b border-gray-100 bg-gray-50/50 flex items-center px-4 gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-amber-400" />
-                <div className="w-3 h-3 rounded-full bg-emerald-400" />
-              </div>
-              {/* Fake Dashboard Content */}
-              <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-60">
-                <div className="col-span-2 space-y-4">
-                  <div className="h-8 w-1/3 bg-gray-200 rounded-lg animate-pulse" />
-                  <div className="h-4 w-full bg-gray-100 rounded-md" />
-                  <div className="h-4 w-5/6 bg-gray-100 rounded-md" />
-                  <div className="h-32 w-full bg-accent/5 rounded-xl border border-accent/10 mt-6" />
-                </div>
-                <div className="space-y-4">
-                  <div className="h-32 w-full bg-gray-100 rounded-xl" />
-                  <div className="h-32 w-full bg-gray-100 rounded-xl" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </section>
 
       {/* ════════════ Features Section ════════════ */}
@@ -209,41 +179,7 @@ const LandingPage = () => {
                 ))}
               </div>
             </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
-              className="relative hidden lg:block"
-            >
-              <div className="absolute inset-0 bg-gradient-to-tr from-accent/20 to-indigo-500/20 blur-3xl rounded-full" />
-              <div className="relative bg-white/50 backdrop-blur-xl border border-white/60 shadow-2xl rounded-3xl p-8">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-                    <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
-                      <span className="text-2xl font-black text-accent">85%</span>
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-gray-900">Strong Match</h4>
-                      <p className="text-gray-500 text-sm">Target: Senior Engineer</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm font-semibold">
-                      <span className="text-gray-700">React.js</span>
-                      <span className="text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">Expert</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm font-semibold">
-                      <span className="text-gray-700">Docker</span>
-                      <span className="text-amber-500 bg-amber-50 px-2 py-0.5 rounded">Missing</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm font-semibold">
-                      <span className="text-gray-700">AWS</span>
-                      <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded">Gap</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
+   
           </div>
         </div>
       </section>
