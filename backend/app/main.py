@@ -26,27 +26,24 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# Add CORS middleware
-cors_origins = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else ["*"]
-cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
+# Add CORS middleware - MUST be added before other middleware
+# Configure allowed origins
+cors_origins = os.getenv("CORS_ORIGINS", "*")
+if isinstance(cors_origins, str):
+    if cors_origins == "*":
+        cors_origins = ["*"]
+    else:
+        cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
 
 logger.info(f"CORS origins configured: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=[
-        "Content-Type",
-        "Authorization",
-        "Accept",
-        "Origin",
-        "Access-Control-Request-Method",
-        "Access-Control-Request-Headers",
-    ],
-    expose_headers=["*"],
-    max_age=3600,
+    allow_origins=cors_origins if isinstance(cors_origins, list) else ["*"],
+    allow_credentials=False if cors_origins == ["*"] else True,  # Can't use credentials with wildcard
+    allow_methods=["*"],
+    allow_headers=["*"],
+    max_age=600,
 )
 
 
@@ -98,13 +95,6 @@ async def startup_event():
 async def shutdown_event():
     """Log shutdown."""
     logger.info(f"Shutting down {settings.api_title}")
-
-
-# CORS test endpoint
-@app.options("/{full_path:path}", tags=["CORS"])
-async def options_handler(full_path: str):
-    """Handle CORS preflight requests."""
-    return {"message": "CORS preflight OK"}
 
 
 # Health check endpoint
