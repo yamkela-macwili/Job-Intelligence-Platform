@@ -87,7 +87,17 @@ async def create_analysis(
         recommendations = ai_analysis.get("recommendations", "No recommendations available")
         
         # Generate roadmap
-        roadmap = AIEngine.generate_career_roadmap(cv.raw_text, None)
+        roadmap_response = AIEngine.generate_career_roadmap(cv.raw_text, None)
+        # Check if roadmap is an error response
+        try:
+            roadmap_data = parse_json_safely(roadmap_response, {})
+            if "error" in roadmap_data:
+                logger.warning(f"Roadmap generation failed: {roadmap_data.get('error')}")
+                roadmap = json_to_string({})  # Store empty roadmap instead of error
+            else:
+                roadmap = roadmap_response
+        except:
+            roadmap = roadmap_response
         
         # Store analysis in database
         analysis = Analysis(
